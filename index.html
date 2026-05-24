@@ -1,63 +1,301 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Airdrop Sybil Inspector — Anti-Fraud Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:#1a1a00;color:#fef9c3;min-height:100vh}
-.caution{background-image:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(234,179,8,0.03) 20px,rgba(234,179,8,0.03) 40px)}
-.card{background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.2);border-radius:16px;transition:all .3s}
-.card:hover{border-color:rgba(234,179,8,0.5);box-shadow:0 0 30px rgba(234,179,8,0.08)}
-.mono{font-family:'Space Mono',monospace}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sybil Inspector // Digital Forensics Lab</title>
+  <style>
+    :root {
+      --charcoal: #111111;
+      --lab: #171717;
+      --panel: #1d1d1a;
+      --paper: #d8ceb7;
+      --paper-dark: #a99b7c;
+      --red: #d3192b;
+      --blood: #7e0610;
+      --green: #39ff88;
+      --amber: #f5b342;
+      --cyan: #76eaff;
+      --ink: #070707;
+      --muted: #878787;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #efefef;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(118,234,255,.08), transparent 26rem),
+        radial-gradient(circle at 85% 20%, rgba(211,25,43,.10), transparent 24rem),
+        linear-gradient(135deg, #0a0a0a 0%, var(--charcoal) 50%, #080808 100%);
+      font-family: "Courier New", monospace;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle, black, transparent 78%);
+      z-index: 0;
+    }
+
+    .scanline {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(to bottom, transparent, rgba(57,255,136,.035), transparent);
+      height: 120px;
+      animation: scan 7s linear infinite;
+      z-index: 20;
+    }
+    @keyframes scan { from { transform: translateY(-130px); } to { transform: translateY(100vh); } }
+
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 28px clamp(18px, 4vw, 52px) 16px;
+      border-bottom: 1px solid rgba(211,25,43,.5);
+      background: rgba(0,0,0,.42);
+      box-shadow: 0 12px 40px rgba(0,0,0,.55);
+    }
+    .case-stamp { color: var(--red); letter-spacing: .32em; font-size: 12px; text-transform: uppercase; }
+    h1 { margin: 8px 0 6px; font-size: clamp(32px, 6vw, 72px); line-height: .9; text-transform: uppercase; text-shadow: 0 0 20px rgba(211,25,43,.38); }
+    .subtitle { color: #bdbdbd; max-width: 920px; line-height: 1.5; }
+    .status-strip { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .status-strip span { border: 1px solid rgba(57,255,136,.35); color: var(--green); padding: 7px 10px; background: rgba(57,255,136,.06); font-size: 12px; }
+
+    main {
+      position: relative;
+      z-index: 1;
+      padding: 24px clamp(14px, 3vw, 40px) 50px;
+      display: grid;
+      grid-template-columns: minmax(260px, 330px) minmax(640px, 1fr) minmax(280px, 360px);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .lab-panel, .evidence-board {
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(29,29,26,.94), rgba(9,9,9,.94));
+      box-shadow: 0 18px 50px rgba(0,0,0,.55), inset 0 0 24px rgba(255,255,255,.025);
+    }
+    .lab-panel { padding: 16px; position: relative; overflow: hidden; }
+    .lab-panel::after {
+      content: ""; position: absolute; inset: 8px; border: 1px dashed rgba(255,255,255,.08); pointer-events: none;
+    }
+    .panel-title { color: var(--cyan); font-size: 14px; letter-spacing: .2em; text-transform: uppercase; margin: 0 0 14px; }
+
+    .evidence-board {
+      min-height: 790px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(255,255,255,.02), rgba(255,255,255,.02)),
+        repeating-linear-gradient(8deg, rgba(120,83,36,.18) 0 3px, transparent 3px 18px),
+        #21180f;
+      border: 12px solid #392713;
+      outline: 1px solid rgba(245,179,66,.36);
+    }
+    .board-label {
+      position: absolute; top: 18px; left: 24px; z-index: 4;
+      background: rgba(0,0,0,.74); color: var(--paper);
+      border-left: 4px solid var(--red); padding: 10px 14px;
+      text-transform: uppercase; letter-spacing: .18em; font-weight: bold;
+    }
+
+    svg.strings { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    .red-string { stroke: var(--red); stroke-width: 3; filter: drop-shadow(0 0 6px rgba(211,25,43,.9)); stroke-linecap: round; stroke-dasharray: 9 7; animation: stringPulse 2.8s infinite linear; }
+    .thin-string { stroke: rgba(211,25,43,.65); stroke-width: 1.5; stroke-dasharray: none; }
+    @keyframes stringPulse { to { stroke-dashoffset: -32; } }
+
+    .wallet-node {
+      position: absolute; z-index: 3;
+      width: 142px; min-height: 72px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 10px;
+      transform: rotate(var(--rot));
+      box-shadow: 0 10px 22px rgba(0,0,0,.55);
+      border: 1px solid var(--paper-dark);
+    }
+    .wallet-node::before {
+      content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--red);
+      top: -8px; left: calc(50% - 8px); box-shadow: 0 0 10px rgba(211,25,43,.9);
+    }
+    .wallet-node strong { display: block; font-size: 12px; margin-bottom: 6px; }
+    .wallet-node small { display: block; font-size: 10px; line-height: 1.35; }
+    .wallet-node.prime { background: #ffd6d6; border-color: var(--red); }
+    .cluster-note {
+      position: absolute; z-index: 2; background: rgba(0,0,0,.78); border: 1px solid rgba(57,255,136,.35);
+      color: var(--green); padding: 12px; max-width: 210px; font-size: 12px; line-height: 1.45;
+      box-shadow: inset 0 0 18px rgba(57,255,136,.08);
+    }
+
+    .fingerprint {
+      width: 172px; height: 172px; margin: 8px auto 16px; border-radius: 50%;
+      background:
+        radial-gradient(ellipse at center, transparent 0 18%, rgba(57,255,136,.2) 19% 20%, transparent 21% 28%, rgba(57,255,136,.22) 29% 30%, transparent 31% 38%, rgba(57,255,136,.18) 39% 40%, transparent 41%),
+        repeating-radial-gradient(ellipse at center, transparent 0 8px, rgba(57,255,136,.72) 9px 10px, transparent 11px 16px);
+      border: 1px solid rgba(57,255,136,.5);
+      filter: drop-shadow(0 0 16px rgba(57,255,136,.25));
+      position: relative;
+    }
+    .fingerprint::after { content:"MATCH 87%"; position:absolute; bottom: -8px; left: 36px; background:#050505; color:var(--green); padding:3px 8px; font-size:12px; }
+    .metric { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); font-size:13px; }
+    .metric b { color: var(--green); }
+
+    .tags { display:flex; flex-wrap:wrap; gap:9px; }
+    .tag { background:#2a080c; border:1px solid var(--red); color:#ffd8dc; padding:8px 9px; font-size:12px; transform: rotate(-1deg); box-shadow: 0 0 10px rgba(211,25,43,.12); }
+
+    .heatmap { display:grid; grid-template-columns: repeat(7, 1fr); gap:5px; margin-top: 10px; }
+    .heat { aspect-ratio:1; border:1px solid rgba(0,0,0,.4); display:grid; place-items:center; font-size:10px; color:#111; font-weight:bold; }
+    .h1{background:#1df26d}.h2{background:#b7f442}.h3{background:#f5b342}.h4{background:#ff6d2d}.h5{background:#d3192b;color:white;box-shadow:0 0 14px rgba(211,25,43,.6)}
+
+    .timeline { position:relative; padding-left:22px; }
+    .timeline::before { content:""; position:absolute; left:6px; top:2px; bottom:4px; width:2px; background:linear-gradient(var(--red), var(--green)); }
+    .event { position:relative; margin:0 0 15px; font-size:12px; line-height:1.45; color:#d8d8d8; }
+    .event::before { content:""; position:absolute; left:-21px; top:3px; width:11px; height:11px; border-radius:50%; background:var(--red); box-shadow:0 0 10px var(--red); }
+    .event time { display:block; color:var(--amber); margin-bottom:2px; }
+
+    .chain-viewer { margin-top:14px; font-size:12px; }
+    .block { border-left:3px solid var(--cyan); margin:8px 0; padding:8px 10px; background:rgba(118,234,255,.055); }
+    .block span { color:var(--cyan); }
+
+    .terminal {
+      background:#030603; color:var(--green); border:1px solid rgba(57,255,136,.35); padding:12px; min-height:162px;
+      font-size:12px; line-height:1.55; box-shadow:inset 0 0 24px rgba(57,255,136,.08); white-space:pre-wrap;
+    }
+    .feed-line { border-bottom:1px solid rgba(57,255,136,.12); padding:6px 0; }
+    .feed-line em { color: var(--red); font-style: normal; }
+
+    .lab-footer { grid-column: 1 / -1; display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; color:#8f8f8f; font-size:12px; border-top:1px solid rgba(255,255,255,.1); padding-top:18px; }
+
+    @media (max-width: 1180px) {
+      main { grid-template-columns: 1fr; }
+      .evidence-board { min-height: 760px; }
+    }
+    @media (max-width: 700px) {
+      .wallet-node { width: 118px; font-size: 11px; }
+      .evidence-board { min-height: 680px; border-width: 7px; }
+      svg.strings { transform: scale(.9); transform-origin: top left; }
+    }
+  </style>
 </head>
-<body class="caution">
-<div class="max-w-7xl mx-auto px-6 py-8">
-  <div class="flex items-center gap-4 mb-8">
-    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center">
-      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+<body>
+  <div class="scanline"></div>
+  <header>
+    <div class="case-stamp">Restricted Case File // Sybil Inspector</div>
+    <h1>Digital Forensics Lab</h1>
+    <p class="subtitle">Cybercrime investigation interface for exposing coordinated wallet identities, shared funding trails, transaction choreography, and high-risk sybil clusters across on-chain activity.</p>
+    <div class="status-strip">
+      <span>CASE: SYB-0427</span><span>MODE: LIVE TRACE</span><span>CHAINLINKS: 1,284</span><span>CLUSTERS FLAGGED: 17</span>
     </div>
-    <div><h1 class="text-2xl font-bold text-white">Sybil Inspector</h1><p class="text-xs text-yellow-400 tracking-wider mono">ANTI-FRAUD INTELLIGENCE</p></div>
-  </div>
-  <div class="grid grid-cols-4 gap-4 mb-6">
-    <div class="card p-5"><p class="text-xs text-yellow-700 mono mb-1">Wallets Screened</p><p class="text-3xl font-bold mono">847K</p></div>
-    <div class="card p-5"><p class="text-xs text-yellow-700 mono mb-1">Sybil Clusters</p><p class="text-3xl font-bold text-red-400 mono">12,847</p></div>
-    <div class="card p-5"><p class="text-xs text-yellow-700 mono mb-1">False Positive Rate</p><p class="text-3xl font-bold text-emerald-400 mono">0.3%</p></div>
-    <div class="card p-5"><p class="text-xs text-yellow-700 mono mb-1">Processing Speed</p><p class="text-3xl font-bold mono">50K<span class="text-lg">/min</span></p></div>
-  </div>
-  <div class="card p-6 mb-6">
-    <h3 class="text-sm font-semibold text-yellow-300 mb-4 mono">SYBIL CLUSTER DETECTED</h3>
-    <div class="grid grid-cols-6 gap-2 mb-4">
-      <div class="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-center"><p class="text-xs text-red-400 mono">0x7a25...35Fk</p><p class="text-[10px] text-gray-500">Lead wallet</p></div>
-      <div class="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center"><p class="text-xs text-yellow-400 mono">0x8b3c...91Ad</p><p class="text-[10px] text-gray-500">Linked #1</p></div>
-      <div class="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center"><p class="text-xs text-yellow-400 mono">0x4d2e...77Bf</p><p class="text-[10px] text-gray-500">Linked #2</p></div>
-      <div class="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center"><p class="text-xs text-yellow-400 mono">0x1f9a...43Ce</p><p class="text-[10px] text-gray-500">Linked #3</p></div>
-      <div class="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-center"><p class="text-xs text-yellow-400 mono">0x6e8d...29Ha</p><p class="text-[10px] text-gray-500">Linked #4</p></div>
-      <div class="p-2 rounded-lg bg-gray-500/10 border border-gray-500/20 text-center"><p class="text-xs text-gray-400 mono">+41 more</p><p class="text-[10px] text-gray-500">Cluster</p></div>
-    </div>
-    <div class="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-      <p class="text-sm font-medium mb-1 text-yellow-200">AI Cluster Analysis</p>
-      <p class="text-xs text-gray-400">47 wallets funded from same origin within 3 blocks. Identical swap patterns, gas amounts, and timing. 99.7% confidence sybil cluster. Recommend exclusion from airdrop eligibility. Estimated savings: $2.3M in misallocated tokens.</p>
-    </div>
-  </div>
-  <div class="card p-6">
-    <h3 class="text-sm font-semibold text-yellow-300 mb-4 mono">SCREENING CRITERIA</h3>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="space-y-2">
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs text-gray-300">Funding source clustering</span></div>
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs text-gray-300">Transaction timing analysis</span></div>
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs text-gray-300">Gas amount fingerprinting</span></div>
+  </header>
+
+  <main>
+    <aside class="lab-panel">
+      <h2 class="panel-title">Identity Fingerprint Analysis</h2>
+      <div class="fingerprint" aria-label="identity fingerprint graphic"></div>
+      <div class="metric"><span>Funding origin reuse</span><b>92%</b></div>
+      <div class="metric"><span>Gas timing overlap</span><b>81%</b></div>
+      <div class="metric"><span>Contract path similarity</span><b>88%</b></div>
+      <div class="metric"><span>Behavioral entropy</span><b>LOW</b></div>
+
+      <h2 class="panel-title" style="margin-top:24px">Flagged Wallet Evidence Tags</h2>
+      <div class="tags">
+        <span class="tag">0xA91...7F2</span><span class="tag">0xC44...90B</span><span class="tag">0x19E...D10</span><span class="tag">0x77B...AA4</span><span class="tag">0xFE2...118</span><span class="tag">0x501...C9D</span>
       </div>
-      <div class="space-y-2">
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs text-gray-300">Behavioral similarity scoring</span></div>
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs text-gray-300">On-chain graph analysis</span></div>
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-xs text-gray-300">Device/IP correlation (opt-in)</span></div>
+
+      <h2 class="panel-title" style="margin-top:24px">Risk Score Heat Map</h2>
+      <div class="heatmap" id="heatmap"></div>
+    </aside>
+
+    <section class="evidence-board" aria-label="sybil cluster evidence board">
+      <div class="board-label">Sybil Cluster Evidence Board</div>
+      <svg class="strings" viewBox="0 0 900 790" preserveAspectRatio="none">
+        <line class="red-string" x1="190" y1="165" x2="455" y2="310"/>
+        <line class="red-string" x1="455" y1="310" x2="710" y2="180"/>
+        <line class="red-string" x1="455" y1="310" x2="650" y2="545"/>
+        <line class="red-string" x1="455" y1="310" x2="260" y2="580"/>
+        <line class="thin-string" x1="190" y1="165" x2="260" y2="580"/>
+        <line class="thin-string" x1="710" y1="180" x2="650" y2="545"/>
+        <line class="thin-string" x1="260" y1="580" x2="650" y2="545"/>
+      </svg>
+      <div class="wallet-node prime" style="left:43%; top:34%; --rot:-2deg"><strong>PRIME SUSPECT</strong><small>0xA91...7F2<br/>airdrop claims: 43<br/>risk: 98/100</small></div>
+      <div class="wallet-node" style="left:12%; top:13%; --rot:3deg"><strong>Funding Mule</strong><small>0xC44...90B<br/>seeded 19 wallets<br/>same CEX exit</small></div>
+      <div class="wallet-node" style="left:74%; top:14%; --rot:-4deg"><strong>Mirror Identity</strong><small>0x19E...D10<br/>nonce rhythm match<br/>11 min cycles</small></div>
+      <div class="wallet-node" style="left:20%; top:70%; --rot:-5deg"><strong>Claim Bot</strong><small>0x77B...AA4<br/>proxy burst<br/>bridge repeat</small></div>
+      <div class="wallet-node" style="left:67%; top:66%; --rot:4deg"><strong>Exit Wallet</strong><small>0xFE2...118<br/>consolidation hub<br/>risk: severe</small></div>
+      <div class="cluster-note" style="left:7%; top:42%">EVIDENCE NOTE: 23 wallets activated within a 14-minute window using identical gas ceiling and identical bridge route.</div>
+      <div class="cluster-note" style="right:6%; top:43%">CHAIN-LINK TRAIL: common funder → wash transfers → synchronized claim → exit consolidation.</div>
+      <div class="cluster-note" style="left:38%; bottom:8%">DETECTIVE SUMMARY: cluster behaves as one operator with fragmented wallet surface area.</div>
+    </section>
+
+    <aside class="lab-panel">
+      <h2 class="panel-title">Real-Time Detection Feed</h2>
+      <div class="terminal" id="feed"></div>
+
+      <h2 class="panel-title" style="margin-top:24px">Investigation Timeline</h2>
+      <div class="timeline">
+        <p class="event"><time>09:14:03 UTC</time>Shared funder deposits into 17 fresh wallets.</p>
+        <p class="event"><time>09:28:41 UTC</time>Wallets bridge via identical route with matching gas profile.</p>
+        <p class="event"><time>10:02:16 UTC</time>Coordinated contract interaction burst detected.</p>
+        <p class="event"><time>10:44:55 UTC</time>Rewards consolidated through two exit wallets.</p>
       </div>
-    </div>
-  </div>
-</div>
+
+      <h2 class="panel-title" style="margin-top:24px">Chain-Link Evidence Viewer</h2>
+      <div class="chain-viewer">
+        <div class="block"><span>Block 19,443,812</span><br/>0xC44...90B → 0xA91...7F2 // seed transfer</div>
+        <div class="block"><span>Block 19,444,006</span><br/>0xA91...7F2 → claim contract // method: batchClaim()</div>
+        <div class="block"><span>Block 19,444,781</span><br/>0x77B...AA4 → 0xFE2...118 // exit consolidation</div>
+      </div>
+    </aside>
+
+    <footer class="lab-footer">
+      <span>Sybil Inspector Forensics Console // Evidence preserved as browser-rendered static exhibit.</span>
+      <span>Operational status: monitoring mempool signatures, timing fingerprints, and wallet graph anomalies.</span>
+    </footer>
+  </main>
+
+  <script>
+    const heat = document.getElementById('heatmap');
+    const levels = [1,2,3,4,5,4,2, 2,3,5,5,4,3,1, 1,4,5,5,5,4,2, 2,3,4,5,4,2,1];
+    levels.forEach((level, i) => {
+      const cell = document.createElement('div');
+      cell.className = `heat h${level}`;
+      cell.textContent = level * 20;
+      cell.title = `Wallet cohort ${i + 1}: risk ${level * 20}`;
+      heat.appendChild(cell);
+    });
+
+    const feed = document.getElementById('feed');
+    const lines = [
+      '[TRACE] nonce cadence collision found: 0xA91...7F2 ↔ 0x19E...D10',
+      '[ALERT] <em>sybil cluster confidence 98.4%</em>',
+      '[LINK] common funder 0xC44...90B connected to 19 wallets',
+      '[SCAN] fingerprint model: gas / bridge / claim sequence matched',
+      '[EVIDENCE] exit wallet 0xFE2...118 receiving consolidation flow',
+      '[WATCH] new wallet 0x501...C9D added to evidence tags'
+    ];
+    let idx = 0;
+    function addLine() {
+      const div = document.createElement('div');
+      div.className = 'feed-line';
+      div.innerHTML = `${new Date().toISOString().slice(11,19)} ${lines[idx % lines.length]}`;
+      feed.appendChild(div);
+      while (feed.children.length > 8) feed.removeChild(feed.firstChild);
+      idx++;
+    }
+    lines.forEach(addLine);
+    setInterval(addLine, 2600);
+  </script>
 </body>
 </html>
